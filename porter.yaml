@@ -17,6 +17,9 @@ mixins:
   - exec
   - az
 install:
+outputs:
+  - name: activeresourcegroups
+    type: string
 
   - az:
       description: "Logging into Azure..."  
@@ -25,7 +28,10 @@ install:
       suppress-output: true
       flags:
         output: table
+        identity: ""
         username: "'${AZURE_USER_MSI_RESOURCE_ID}'"
+
+        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
       description: "Setting the proper resource group..."
       suppress-output: false
@@ -37,6 +43,12 @@ install:
       outputs:
         - name: activeresourcegroup
           jsonPath: "'[0].name'"
+  - exec:
+      command: bash
+      description: "what cluster name are we using?"
+      suppress-output: false
+      flags:
+        c: '"echo {{bundle.outputs.activeresourcegroup}}"'
 
 upgrade:
   - exec:
