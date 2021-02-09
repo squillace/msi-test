@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.0
+version: 0.1.1
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -16,10 +16,15 @@ registry: ghcr.io/squillace
 mixins:
   - exec
   - az
-install:
+
 outputs:
   - name: activeresourcegroups
     type: string
+    applyTo:
+      - "install"
+
+install:
+
 
   - az:
       description: "Logging into Azure..."  
