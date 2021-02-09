@@ -1,0 +1,180 @@
+name: Build and deploy main
+
+env:
+  AZURE_WEBAPP_NAME: jzdemoapi
+  AZURE_FUNCTIONAPP_NAME: jzdemofunc
+  
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/function/**'
+      - '.github/workflows/**'
+      - 'src/webapi/**'
+      - 'porter.yaml'
+#      - 'modify-params.sh'
+      - 'Dockerfile.tmpl'
+  workflow_dispatch:
+
+jobs:
+
+  build-webapi:
+    name: 'Build Web Api'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.402
+    - name: Publish
+      run: dotnet publish --output './output/webapi/' './src/webapi/webapi.csproj'
+    - name: Upload Artifact 
+      uses: actions/upload-artifact@v2
+      with:
+        name: webapi
+        path: './output/webapi'
+
+  build-function:
+    name: 'Build Function'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.301
+    - name: Install dependencies
+      run: dotnet restore './src/function/function.csproj'
+    - name: Build
+      run: dotnet build --configuration Release --no-restore --output './output/function' './src/function/function.csproj'
+    - name: Test
+      run: dotnet test --no-restore --verbosity normal --output './output/function' './src/function/function.csproj'
+    - name: Upload Artifact 
+      uses: actions/upload-artifact@v2
+      with:
+        name: function
+        path: './output/function'
+
+  bicep-compile:
+    runs-on: ubuntu-latest
+    needs: [ build-function, build-webapi ]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up bicep
+      run: |
+        # Fetch the latest Bicep CLI binary
+        curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64
+        # Mark it as executable
+        chmod +x ./bicep
+        # Add bicep to your PATH (requires admin)
+        sudo mv ./bicep /usr/local/bin/bicep
+        bicep build src/arm/main.bicep
+
+    - name: Upload compiled arm template 
+      uses: actions/upload-artifact@v2
+      with:
+        name: arm
+        path: './src/arm/'
+    
+  porter-build-and-push:
+
+    runs-on: ubuntu-latest
+    needs: [ build-function, build-webapi, bicep-compile ]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Zip for deployment
+      run: |
+        sudo apt-get install zip -y
+        zip 
+#    - name: Enabling porter action
+#      run: |
+#        echo "ACTIONS_ALLOW_UNSECURE_COMMANDS=true" >> $GITHUB_ENV
+    - name: Get application artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: './output/'
+    - name: Zip the function and webapi for source deployment
+      run: | 
+        pushd ./output/function/; zip -r ../../function.zip .; popd 
+        pushd ./output/webapi/; zip -r ../../webapi.zip .; popd
+        # This is where the bundle will find it
+        cp ./output/arm/main.json .
+
+#    - name: Setup Porter
+#      uses: deislabs/porter-gh-action@v0.1.1
+#    - name: Pull in jq mixin
+#      run: porter mixins install jq --url https://github.com/squillace/porter-jq/releases/download --version v0.1.0
+#    - name: Login to DockerHub OCI Registry
+#      uses: docker/login-action@v1
+#      with:
+#        username: ${{ secrets.DOCKER_USERNAME }}
+#        password: ${{ secrets.DOCKER_PASSWORD }}
+
+#    - name: Porter publish to Docker Hub
+#      run: porter publish
+
+    - name: Setup Porter
+      uses: deislabs/porter-gh-action@v0.1.3
+    - name: Pull in jq mixin
+      run: porter mixins install jq --url https://github.com/squillace/porter-jq/releases/download --version v0.1.0
+    - name: Login to GitHub Packages OCI Registry
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GHCR_PASSWORD }}
+    - name: Retag bundle for ghcr.io
+      run: |
+        sed -i.bu 's/squillace/${{ github.repository_owner }}/g' ./porter.yaml
+        grep "registry:" ./porter.yaml
+        grep "version" ./porter.yaml
+    - name: Porter publish to ghcr.io
+      run: porter publish
+
+  deploy-webapi:
+    name: Deploy Web Api
+    runs-on: ubuntu-latest
+    needs: build-webapi
+
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: webapi
+        path: ./output/webapi
+
+    - uses: azure/login@v1.1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Run Azure WebApp Action'
+      uses: azure/webapps-deploy@v2
+      with: 
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: './output/webapi'
+
+  deploy-function:
+    name: Deploy Function
+    runs-on: ubuntu-latest
+    needs: build-function
+
+    steps:
+    - name: Download Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: function
+        path: './output/function'
+
+    - uses: azure/login@v1.1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: 'Run Azure Functions Action'
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: './output/function'
