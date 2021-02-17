@@ -32,13 +32,12 @@ install:
         c: '"echo -n ${AZURE_USER_MSI_RESOURCE_ID}"'
       outputs:
         - name: MSI
-          env: MSI
+          regex: "(.*)"
 
   - az:
       description: "Logging into Azure..."  
       arguments:
         - login
-      suppress-output: true
       flags:
         output: table
         identity: ""
