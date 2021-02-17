@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.1
+version: 0.1.2
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -24,7 +24,12 @@ outputs:
       - "install"
 
 install:
-
+  - exec:
+      command: bash
+      description: "testing for env vars..."
+      suppress-output: false
+      flags:
+        c: '"env"'
 
   - az:
       description: "Logging into Azure..."  
