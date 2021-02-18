@@ -56,7 +56,7 @@ install:
  #       - name: activeresourcegroup
  #         regex: "(.*)"
         - name: "jsongroup"
-          jsonPath: "[0].name"
+          jsonPath: ".[0].name"
   - exec:
       command: bash
       description: "what cluster name are we using?"
