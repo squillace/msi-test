@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.11
+version: 0.1.12
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -67,6 +67,16 @@ install:
         resource-group: "{{bundle.outputs.activeresourcegroup}}"
         output: table
   
+  - az:
+      description: "Creating a storage account...."
+      arguments:
+      - storage
+      - create
+      flags:
+        name: "mynewralphstorage"
+        resource-group: "{{bundle.outputs.activeresourcegroup}}"
+
+
   - exec:
       command: bash
       description: "what cluster name are we using?"
