@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.12
+version: 0.1.13
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -71,6 +71,7 @@ install:
       description: "Creating a storage account...."
       arguments:
       - storage
+      - account
       - create
       flags:
         name: "mynewralphstorage"
