@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.6
+version: 0.1.7
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -50,19 +50,19 @@ install:
       arguments:
         - group
         - list
-        - "-o tsv"
-      flags:
-        query: "[0].name"
-        output: tsv
+#        - "-o tsv"
+#        - "--query '[0].name"
       outputs:
-        - name: activeresourcegroup
-          regex: "(.*)"
+ #       - name: activeresourcegroup
+ #         regex: "(.*)"
+        - name: "jsongroup"
+          jsonPath: "[0].name"
   - exec:
       command: bash
       description: "what cluster name are we using?"
       suppress-output: false
       flags:
-        c: '"echo {{bundle.outputs.activeresourcegroup}}"'
+        c: '"echo {{ bundle.outputs.jsongroup }}"'
 
 upgrade:
   - exec:
