@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.10
+version: 0.1.11
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -61,7 +61,7 @@ install:
   - az:
       description: "now listing resources in our group...."
       arguments:
-      - resources
+      - resource
       - list
       flags:
         resource-group: "{{bundle.outputs.activeresourcegroup}}"
