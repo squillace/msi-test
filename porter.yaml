@@ -29,17 +29,27 @@ outputs:
 
 install:
 
-  - az:
-      description: "Logging into Azure..."  
+install:
+  - exec:
+      command: bash
+      description: "Acquiring credentials..."
       suppress-output: true
+      flags:
+        c: '"echo -n ${AZURE_USER_MSI_RESOURCE_ID}"'
+      outputs:
+        - name: MSI
+          regex: "(.*)"
+
+  - az:
+      description: "Logging into Azure..."
+      suppress-output: true  
       arguments:
         - login
       flags:
         output: table
         identity: ""
-        username: ${AZURE_USER_MSI_RESOURCE_ID}
+        username: "{{bundle.outputs.MSI}}"
 
-        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
       description: "Setting the proper resource group..."
       suppress-output: true
@@ -53,7 +63,7 @@ install:
  #         regex: "(.*)"
         - name: "activeresourcegroup"
           jsonPath: "$[0].name"
-  
+    
   - az:
       description: "now listing resources in our group...."
       arguments:
@@ -85,56 +95,46 @@ install:
         c: '"echo {{ bundle.outputs.activeresourcegroup }}"'
 
 upgrade:
-  - az:
-      description: "Logging into Azure..."  
+  - exec:
+      command: bash
+      description: "Acquiring credentials..."
       suppress-output: true
+      flags:
+        c: '"echo -n ${AZURE_USER_MSI_RESOURCE_ID}"'
+      outputs:
+        - name: MSI
+          regex: "(.*)"
+
+  - az:
+      description: "Logging into Azure..."
+      suppress-output: true  
       arguments:
         - login
       flags:
         output: table
         identity: ""
-        username: ${AZURE_USER_MSI_RESOURCE_ID}
-
-        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
-  - az: 
-      description: "Setting the proper resource group..."
-      suppress-output: true
-      arguments:
-        - group
-        - list
-#        - "-o tsv"
-#        - "--query '[0].name"
-      outputs:
- #       - name: activeresourcegroup
- #         regex: "(.*)"
-        - name: "activeresourcegroup"
-          jsonPath: "$[0].name"
+        username: "{{bundle.outputs.MSI}}"
 
 uninstall:
-  - az:
-      description: "Logging into Azure..."  
+  - exec:
+      command: bash
+      description: "Acquiring credentials..."
       suppress-output: true
+      flags:
+        c: '"echo -n ${AZURE_USER_MSI_RESOURCE_ID}"'
+      outputs:
+        - name: MSI
+          regex: "(.*)"
+
+  - az:
+      description: "Logging into Azure..."
+      suppress-output: true  
       arguments:
         - login
       flags:
         output: table
         identity: ""
-        username: ${AZURE_USER_MSI_RESOURCE_ID}
-
-        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
-  - az: 
-      description: "Setting the proper resource group..."
-      suppress-output: true
-      arguments:
-        - group
-        - list
-#        - "-o tsv"
-#        - "--query '[0].name"
-      outputs:
- #       - name: activeresourcegroup
- #         regex: "(.*)"
-        - name: "activeresourcegroup"
-          jsonPath: "$[0].name"
+        username: "{{bundle.outputs.MSI}}"
   - az: 
       description: "Deleting the storage account...."
       arguments: 
@@ -143,7 +143,7 @@ uninstall:
         - delete
       flags:
         name: "{{bundle.parameters.STORAGE_ACCOUNT_NAME}}"
-        resource-group: "{{bundle.outputs.activeresourcegroup}}"
+        resource-group: "{{bundle.parameters.activeresourcegroup}}"
 
 # Below is an example of how to define credentials
 # See https://porter.sh/author-bundles/#credentials
@@ -164,3 +164,11 @@ parameters:
       - "uninstall"
     source:
       output: STORAGE_ACCOUNT_NAME
+  - name: activeresourcegroup
+    description: "This value is automatically pulled from the bundle state. You do not need to provide this value unless you want to modify the operation."
+    type: string
+    applyTo:
+      - "upgrade"
+      - "uninstall"
+    source:
+      output: activeresourcegroup
