@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.13
+version: 0.1.14
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -22,31 +22,27 @@ outputs:
     type: string
     applyTo:
       - "install"
+  - name: STORAGE_ACCOUNT_NAME
+    type: string
+    applyTo:
+      - "install"
 
 install:
-  - exec:
-      command: bash
-      description: "testing for env vars..."
-      suppress-output: false
-      flags:
-        c: '"echo -n ${AZURE_USER_MSI_RESOURCE_ID}"'
-      outputs:
-        - name: MSI
-          regex: "(.*)"
 
   - az:
       description: "Logging into Azure..."  
+      suppress-output: true
       arguments:
         - login
       flags:
         output: table
         identity: ""
-        username: "{{bundle.outputs.MSI}}"
+        username: "${AZURE_USER_MSI_RESOURCE_ID}"
 
         # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
       description: "Setting the proper resource group..."
-      suppress-output: false
+      suppress-output: true
       arguments:
         - group
         - list
@@ -76,28 +72,78 @@ install:
       flags:
         name: "mynewralphstorage"
         resource-group: "{{bundle.outputs.activeresourcegroup}}"
+      outputs:
+        - name: STORAGE_ACCOUNT_NAME
+          type: string
 
 
   - exec:
       command: bash
-      description: "what cluster name are we using?"
+      description: "what resource group name are we using?"
       suppress-output: false
       flags:
         c: '"echo {{ bundle.outputs.activeresourcegroup }}"'
 
 upgrade:
-  - exec:
-      description: "World 2.0"
-      command: ./helpers.sh
+  - az:
+      description: "Logging into Azure..."  
+      suppress-output: true
       arguments:
-        - upgrade
+        - login
+      flags:
+        output: table
+        identity: ""
+        username: "${AZURE_USER_MSI_RESOURCE_ID}"
+
+        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
+  - az: 
+      description: "Setting the proper resource group..."
+      suppress-output: true
+      arguments:
+        - group
+        - list
+#        - "-o tsv"
+#        - "--query '[0].name"
+      outputs:
+ #       - name: activeresourcegroup
+ #         regex: "(.*)"
+        - name: "activeresourcegroup"
+          jsonPath: "$[0].name"
 
 uninstall:
-  - exec:
-      description: "Uninstall Hello World"
-      command: ./helpers.sh
+  - az:
+      description: "Logging into Azure..."  
+      suppress-output: true
       arguments:
-        - uninstall
+        - login
+      flags:
+        output: table
+        identity: ""
+        username: "${AZURE_USER_MSI_RESOURCE_ID}"
+
+        # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
+  - az: 
+      description: "Setting the proper resource group..."
+      suppress-output: true
+      arguments:
+        - group
+        - list
+#        - "-o tsv"
+#        - "--query '[0].name"
+      outputs:
+ #       - name: activeresourcegroup
+ #         regex: "(.*)"
+        - name: "activeresourcegroup"
+          jsonPath: "$[0].name"
+  - az: 
+      description: "Deleting the storage account...."
+      arguments: 
+        - storage
+        - account
+        - delete
+      flags:
+        name: "{{bundle.parameters.STORAGE_ACCOUNT_NAME}}"
+        resource-group: "{{bundle.outputs.activeresourcegroup}}"
 
 # Below is an example of how to define credentials
 # See https://porter.sh/author-bundles/#credentials
@@ -109,7 +155,12 @@ credentials:
 
 # Below is an example of how to define parameters
 # See https://porter.sh/author-bundles/#parameters
-#parameters:
-#  - name: mysql_user
-#    type: string
-#    default: wordpress
+parameters:
+  - name: STORAGE_ACCOUNT_NAME
+    description: "This value is automatically pulled from the state of the bundle installation the uninstall operation is working against. You do not provide it yourself."
+    type: string
+    path: /cnab/app/v1.2-deployment/kustomize.zip
+    applyTo:
+      - "uninstall"
+    source:
+      output: STORAGE_ACCOUNT_NAME
