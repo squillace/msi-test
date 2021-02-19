@@ -20,12 +20,9 @@ mixins:
 outputs:
   - name: activeresourcegroup
     type: string
-    applyTo:
-      - "install"
+
   - name: STORAGE_ACCOUNT_NAME
     type: string
-    applyTo:
-      - "install"
 
 install:
   - exec:
@@ -157,7 +154,6 @@ parameters:
   - name: STORAGE_ACCOUNT_NAME
     description: "This value is automatically pulled from the state of the bundle installation the uninstall operation is working against. You do not provide it yourself."
     type: string
-    path: /cnab/app/v1.2-deployment/kustomize.zip
     applyTo:
       - "uninstall"
     source:
