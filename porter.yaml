@@ -4,7 +4,7 @@
 # Uncomment out the sections below to take full advantage of what Porter can do!
 
 name: msi-test
-version: 0.1.14
+version: 0.1.15
 description: "Testing msi integration into bundles."
 # TODO: update the registry to your own, e.g. myregistry
 registry: ghcr.io/squillace
@@ -37,7 +37,7 @@ install:
       flags:
         output: table
         identity: ""
-        username: "${AZURE_USER_MSI_RESOURCE_ID}"
+        username: ${AZURE_USER_MSI_RESOURCE_ID}
 
         # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
@@ -93,7 +93,7 @@ upgrade:
       flags:
         output: table
         identity: ""
-        username: "${AZURE_USER_MSI_RESOURCE_ID}"
+        username: ${AZURE_USER_MSI_RESOURCE_ID}
 
         # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
@@ -119,7 +119,7 @@ uninstall:
       flags:
         output: table
         identity: ""
-        username: "${AZURE_USER_MSI_RESOURCE_ID}"
+        username: ${AZURE_USER_MSI_RESOURCE_ID}
 
         # z login --identity -u  ${AZURE_USER_MSI_RESOURCE_ID}
   - az: 
