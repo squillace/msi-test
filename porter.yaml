@@ -20,9 +20,12 @@ mixins:
 outputs:
   - name: activeresourcegroup
     type: string
-
+    applyTo:
+      - "install"
   - name: STORAGE_ACCOUNT_NAME
     type: string
+    applyTo:
+      - "install"
 
 install:
   - exec:
